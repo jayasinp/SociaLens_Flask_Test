@@ -3,6 +3,7 @@ from validate_data import data_load, data_validate, list_columns
 from deidentify import deidentify_data
 from clean import drop_data_dictionary, drop_columns, check_missing_values, fill_missing_values, check_outliers
 from revalidate_data import data_revalidate, list_columns
+from analysis import generate_graphs, social_network_analysis, generate_statistics, export_as_json
 import pandas as pd
 import os
 import glob
@@ -101,6 +102,21 @@ def export_data():
         for sheet_name, df in sheets_dict.items():
             df.to_excel(writer, sheet_name=sheet_name, index=False)
     return render_template('exported.html')
+
+#PIPELINE PART 6: DATA ANALYSIS
+@app.route('/analysis', methods=['POST'])
+def analysis_route():
+    global sheets_dict
+    # Generate graph objects
+    graphs_dict = generate_graphs(sheets_dict)
+    # Conduct social network analysis
+    sna_results = social_network_analysis(graphs_dict)
+    # Generate descriptive statistics
+    stats = generate_statistics(sheets_dict).to_dict()
+    # Export results
+    export_as_json(sna_results, "sna_results.json", app.config['UPLOAD_FOLDER'])
+    export_as_json(stats, "statistics.json", app.config['UPLOAD_FOLDER'])
+    return render_template('analysis_results.html', sna_results=sna_results, stats=stats)
 
 if __name__ == '__main__':
     app.run(debug=True)
